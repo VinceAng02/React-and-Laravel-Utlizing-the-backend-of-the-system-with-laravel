@@ -7,16 +7,19 @@ export default function App() {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Fetch all tasks from Laravel Backend
   const fetchTasks = async () => {
     try {
+      setError(null);
       const response = await axios.get(API_URL, {
         headers: { Accept: 'application/json' },
       });
       setTasks(Array.isArray(response.data) ? response.data : []);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
+    } catch (err) {
+      console.error('Error fetching tasks:', err);
+      setError('Cannot connect to Laravel backend at http://127.0.0.1:8000. Make sure to run "php artisan serve" inside the Backend folder.');
     }
   };
 
@@ -38,8 +41,9 @@ export default function App() {
       );
       setTitle('');
       fetchTasks();
-    } catch (error) {
-      console.error('Error adding task:', error);
+    } catch (err) {
+      console.error('Error adding task:', err);
+      alert('Failed to add task. Please check if Laravel backend is running.');
     } finally {
       setLoading(false);
     }
@@ -54,8 +58,8 @@ export default function App() {
         { headers: { Accept: 'application/json' } }
       );
       fetchTasks();
-    } catch (error) {
-      console.error('Error updating task:', error);
+    } catch (err) {
+      console.error('Error updating task:', err);
     }
   };
 
@@ -66,8 +70,8 @@ export default function App() {
         headers: { Accept: 'application/json' },
       });
       fetchTasks();
-    } catch (error) {
-      console.error('Error deleting task:', error);
+    } catch (err) {
+      console.error('Error deleting task:', err);
     }
   };
 
@@ -75,6 +79,42 @@ export default function App() {
     <div className="container">
       <h1>Task Manager</h1>
       <p className="subtitle">CCS112 • Simple React & Laravel Application</p>
+
+      {/* Backend Connection Warning if not running */}
+      {error && (
+        <div style={{
+          backgroundColor: '#fef2f2',
+          border: '1px solid #f87171',
+          color: '#b91c1c',
+          padding: '12px 16px',
+          borderRadius: '6px',
+          marginBottom: '20px',
+          fontSize: '14px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div>
+            <strong>Backend Offline: </strong>
+            <span>{error}</span>
+          </div>
+          <button
+            onClick={fetchTasks}
+            style={{
+              padding: '6px 12px',
+              backgroundColor: '#dc2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              marginLeft: '12px',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Task Creation Form */}
       <form onSubmit={addTask} className="task-form">
