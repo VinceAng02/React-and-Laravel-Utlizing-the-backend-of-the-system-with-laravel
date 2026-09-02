@@ -1,122 +1,124 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-function App() {
-  const [count, setCount] = useState(0)
+const API_URL = 'http://127.0.0.1:8000/tasks';
+
+export default function App() {
+  const [tasks, setTasks] = useState([]);
+  const [title, setTitle] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Fetch all tasks from Laravel Backend
+  const fetchTasks = async () => {
+    try {
+      const response = await axios.get(API_URL, {
+        headers: { Accept: 'application/json' },
+      });
+      setTasks(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, []);
+
+  // Add new task
+  const addTask = async (e) => {
+    e.preventDefault();
+    if (!title.trim()) return;
+
+    setLoading(true);
+    try {
+      await axios.post(
+        API_URL,
+        { title: title.trim() },
+        { headers: { Accept: 'application/json' } }
+      );
+      setTitle('');
+      fetchTasks();
+    } catch (error) {
+      console.error('Error adding task:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Toggle task status
+  const toggleTask = async (task) => {
+    try {
+      await axios.patch(
+        `${API_URL}/${task.id}`,
+        { is_done: !task.is_done },
+        { headers: { Accept: 'application/json' } }
+      );
+      fetchTasks();
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+
+  // Delete task
+  const deleteTask = async (id) => {
+    try {
+      await axios.delete(`${API_URL}/${id}`, {
+        headers: { Accept: 'application/json' },
+      });
+      fetchTasks();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
+    <div className="container">
+      <h1>Task Manager</h1>
+      <p className="subtitle">CCS112 • Simple React & Laravel Application</p>
+
+      {/* Task Creation Form */}
+      <form onSubmit={addTask} className="task-form">
+        <input
+          type="text"
+          className="task-input"
+          placeholder="Enter task title..."
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+        <button type="submit" className="btn-add" disabled={loading || !title.trim()}>
+          {loading ? 'Adding...' : 'Add Task'}
         </button>
-      </section>
+      </form>
 
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
+      {/* Task List */}
+      {tasks.length > 0 ? (
+        <ul className="task-list">
+          {tasks.map((task) => (
+            <li key={task.id} className="task-item">
+              <div className="task-content">
+                <input
+                  type="checkbox"
+                  className="task-checkbox"
+                  checked={Boolean(task.is_done)}
+                  onChange={() => toggleTask(task)}
+                />
+                <span className={`task-title ${task.is_done ? 'completed' : ''}`}>
+                  {task.title}
+                </span>
+              </div>
+              <button
+                type="button"
+                className="btn-delete"
+                onClick={() => deleteTask(task.id)}
+              >
+                Delete
+              </button>
             </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+          ))}
+        </ul>
+      ) : (
+        <p className="empty-message">No tasks yet. Add a new task above!</p>
+      )}
+    </div>
+  );
 }
-
-export default App
